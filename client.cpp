@@ -19,6 +19,11 @@
 #define MAP_RANGE(value, fromLow, fromHigh, toLow, toHigh) ((value - fromLow) * (toHigh - toLow) / (fromHigh - fromLow) + toLow)
 
 int get_cpu_temperature();
+struct NetworkUsage {
+	unsigned long rx_bytes;
+	unsigned long tx_bytes;
+};
+NetworkUsage getNetworkUsage();
 void receiveMessages(int sockfd, struct sockaddr_in& serverAddr) {
 	char buffer[BUFFER_SIZE];
 	socklen_t addrLen = sizeof(serverAddr);
@@ -105,10 +110,19 @@ int main() {
 
 	while (true)
 	{
-		std::string temp_str = "Temp " + std::to_string(get_cpu_temperature()) + "C";
+		const double interval = 0.5; // interval in seconds
+		const double bytes_to_kb = 1024.0;
+		NetworkUsage usage1 = getNetworkUsage();
+		std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(interval * 1000)));
+		NetworkUsage usage2 = getNetworkUsage();
+		unsigned long rx_diff = usage2.rx_bytes - usage1.rx_bytes;
+		unsigned long tx_diff = usage2.tx_bytes - usage1.tx_bytes;
+		unsigned long rx_kbps = static_cast<unsigned long>(rx_diff / bytes_to_kb / interval);
+		unsigned long tx_kbps = static_cast<unsigned long>(tx_diff / bytes_to_kb / interval);
+
+		std::string temp_str = "Temp " + std::to_string(get_cpu_temperature()) + "C, R: " + std::to_string(rx_kbps) + " KB/s, T: " + std::to_string(tx_kbps) + " KB/s\n";
 
 		sendto(sockfd, temp_str.c_str(), temp_str.length(), MSG_CONFIRM, (const struct sockaddr*)&serverAddr, sizeof(serverAddr));
-		std::this_thread::sleep_for(std::chrono::seconds(1));
 	}
 
 	receiveThread.join();

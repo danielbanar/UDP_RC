@@ -84,7 +84,7 @@ int main()
         }
         else
         {
-            std::cout << "Received message from client: " << rxbuffer << std::endl;
+            std::cout << "Received message from client: " << rxbuffer;
         }
         if (sendto(serverSocket, messageToSend.c_str(), messageToSend.length(), 0, (struct sockaddr*)&clientAddr, clientAddrLen) == SOCKET_ERROR)
         {
