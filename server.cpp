@@ -64,13 +64,13 @@ int main()
 
     uint8_t rxbuffer[128] = {0};
 
-    Controller con(0);
+    Controller controller(0);
 
     while (true)
     {
-        con.Poll();
-        con.Deadzone();
-        std::string messageToSend = con.CreatePayload();
+        controller.Poll();
+        controller.Deadzone();
+        std::string messageToSend = controller.CreatePayload();
         int bytesRead = recvfrom(serverSocket, (char*)rxbuffer, sizeof(rxbuffer), 0, (struct sockaddr*)&clientAddr, &clientAddrLen);
         if (bytesRead == SOCKET_ERROR)
         {
@@ -79,23 +79,22 @@ int main()
             {
                 LPSTR errorMessage = nullptr;
                 FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&errorMessage, 0, NULL);
-                std::cerr << "Error receiving data from UDP socket: " << errorMessage << std::endl;
+                std::cerr << "Error receiving data from UDP socket: " << errorMessage;
             }
         }
         else
         {
             std::cout << "Received message from client: " << rxbuffer << std::endl;
         }
-        con.Print();
         if (sendto(serverSocket, messageToSend.c_str(), messageToSend.length(), 0, (struct sockaddr*)&clientAddr, clientAddrLen) == SOCKET_ERROR)
         {
             int err = WSAGetLastError();
             LPSTR errorMessage = nullptr;
             FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&errorMessage, 0, NULL);
-            std::cerr << "Error sending data to client: " << errorMessage << std::endl;
+            std::cerr << "Error sending data to client: " << errorMessage;
         }
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
     }
 
     closesocket(serverSocket);
