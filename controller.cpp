@@ -33,7 +33,7 @@ void Controller::Poll()
 }
 std::string Controller::CreatePayload()
 {
-	std::string result = "N" + std::to_string(nPacketNumber) + "LX" + std::to_string(LX) + "LT" + std::to_string(LT) + "RT" + std::to_string(RT)+'\n';
+	std::string result = "N" + std::to_string(nPacketNumber) + "LX" + std::to_string(LX) + "LT" + std::to_string(LT) + "RT" + std::to_string(RT) + "B" + std::to_string(Buttons) +'\n';
 	return result;
 }
 

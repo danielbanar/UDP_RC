@@ -9,19 +9,22 @@
 #include <netdb.h>
 #include <regex>
 #include <pigpio.h>
+#include <fstream>
 #define THROTTLE_PIN 14
 #define SERVO_PIN 15
+#define LED_PIN 18
 #define PORT 2223
 #define BUFFER_SIZE 1024
 // Macro to map a value from one range to another
 #define MAP_RANGE(value, fromLow, fromHigh, toLow, toHigh) ((value - fromLow) * (toHigh - toLow) / (fromHigh - fromLow) + toLow)
 
+int get_cpu_temperature();
 void receiveMessages(int sockfd, struct sockaddr_in& serverAddr) {
 	char buffer[BUFFER_SIZE];
 	socklen_t addrLen = sizeof(serverAddr);
-	std::regex regexPattern("N(-?\\d+)LX(-?\\d+)LT(-?\\d+)RT(-?\\d+)\\n");
-	
-	while (true) 
+	std::regex regexPattern("N(-?\\d+)LX(-?\\d+)LT(-?\\d+)RT(-?\\d+)B(-?\\d+)\\n");
+
+	while (true)
 	{
 		int len = recvfrom(sockfd, buffer, BUFFER_SIZE, MSG_WAITALL, (struct sockaddr*)&serverAddr, &addrLen);
 		buffer[len] = '\0';
@@ -37,10 +40,13 @@ void receiveMessages(int sockfd, struct sockaddr_in& serverAddr) {
 				int LX = std::stoi(matches[2]);
 				int LT = std::stoi(matches[3]);
 				int RT = std::stoi(matches[4]);
+				int Buttons = std::stoi(matches[5]);
 				gpioServo(SERVO_PIN, MAP_RANGE(LX, -32768, 32767, 1000, 2000));
 				gpioServo(THROTTLE_PIN, MAP_RANGE(RT - LT, -255, 255, 1000, 2000));
+				gpioWrite(LED_PIN, Buttons & 0x100?1:0);
 				//std::cout << "T" << MAP_RANGE(LX, -32768, 32767, 1000, 2000) << std::endl;
 				//std::cout << "S" << MAP_RANGE(RT - LT, -255, 255, 1000, 2000) << std::endl;
+				//std::cout << "L" << (Buttons & 0x100?1:0) << std::endl;
 				lastN = N;
 				lastValidPayload = std::chrono::high_resolution_clock::now();
 			}
@@ -61,7 +67,6 @@ void receiveMessages(int sockfd, struct sockaddr_in& serverAddr) {
 
 int main() {
 	int sockfd;
-	char buffer[BUFFER_SIZE];
 	struct sockaddr_in serverAddr;
 	struct addrinfo hints, * res;
 
@@ -98,9 +103,11 @@ int main() {
 	// Start a thread to receive messages from the server
 	std::thread receiveThread(receiveMessages, sockfd, std::ref(serverAddr));
 
-	while (true) {
-		const char* message = "Hello from client";
-		sendto(sockfd, message, strlen(message), MSG_CONFIRM, (const struct sockaddr*)&serverAddr, sizeof(serverAddr));
+	while (true)
+	{
+		std::string temp_str = "Temp " + std::to_string(get_cpu_temperature()) + "C";
+
+		sendto(sockfd, temp_str.c_str(), temp_str.length(), MSG_CONFIRM, (const struct sockaddr*)&serverAddr, sizeof(serverAddr));
 		std::this_thread::sleep_for(std::chrono::seconds(1));
 	}
 
