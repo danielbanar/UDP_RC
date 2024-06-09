@@ -1,11 +1,14 @@
 #pragma once
 #include <iostream>
-#include <mutex>
+#include <string>
 #ifdef _WIN32
 #include <windows.h>
 #include <XInput.h>
+#pragma comment(lib, "XInput.lib")
 #else
-//Lunix
+#include <fcntl.h>
+#include <unistd.h>
+#include <linux/joystick.h>
 #endif
 class Controller
 {
@@ -15,10 +18,8 @@ public:
     void Print();
     void Deadzone();
     std::string CreatePayload();
-    ~Controller();
   
 private:
-    XINPUT_STATE state;
     int controllerIndex;
     unsigned long nPacketNumber;
     unsigned short Buttons;

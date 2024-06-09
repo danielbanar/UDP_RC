@@ -1,20 +1,14 @@
-#include <iostream>
 #include "controller.h"
-#include <string>
-
-#pragma comment(lib, "XInput.lib")
 
 
 Controller::Controller(int i) : controllerIndex(i), nPacketNumber(0), Buttons(0)
 {
-	ZeroMemory(&state, sizeof(XINPUT_STATE));
-}
-
-Controller::~Controller()
-{
+	Poll();
 }
 void Controller::Poll()
 {
+	static XINPUT_STATE state;
+	ZeroMemory(&state, sizeof(XINPUT_STATE));
 	DWORD dwResult = XInputGetState(controllerIndex, &state); // Get controller state
 
 	if (dwResult == ERROR_SUCCESS) {
