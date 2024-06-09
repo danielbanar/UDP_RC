@@ -1,4 +1,4 @@
-#include "overlay.h"
+﻿#include "overlay.h"
 #include <regex>
 #define CHAR_TO_WCHAR(str) \
     ([](const char* input) { \
@@ -47,7 +47,7 @@ void Overlay::Init(const char* windowName)
 		WS_EX_TOPMOST | WS_EX_LAYERED | WS_EX_TRANSPARENT, // Window style
 		CLASS_NAME,
 		"Overlay",
-		WS_POPUP,
+		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
 		NULL,
 		NULL,
@@ -111,7 +111,7 @@ void Overlay::RenderText(HWND hwnd) {
 	FontFamily fontFamily(L"Consolas");
 	Font font(&fontFamily, 20, FontStyleRegular, UnitPixel);
 	SolidBrush solidBrush(Color(255, 255, 255, 255)); // White text
-
+	SolidBrush outlinePen(Color(255, 0, 0, 0));
 	// Text to render
 	time_t currentTime = time(0);
 	struct tm localTime;
@@ -124,7 +124,8 @@ void Overlay::RenderText(HWND hwnd) {
 			graphics.MeasureString(timeString, -1, &font, PointF(0, 0), &textRect);
 			RECT rect;
 			GetWindowRect(hwnd, &rect);
-			graphics.DrawString(timeString, -1, &font, { rect.right - rect.left - textRect.Width-10, 30.0f }, &solidBrush);
+			graphics.DrawString(timeString, -1, &font, { rect.right - rect.left - textRect.Width - 15+1, 0.0f+1 }, &outlinePen);
+			graphics.DrawString(timeString, -1, &font, { rect.right - rect.left - textRect.Width - 15, 0.0f }, &solidBrush);
 		}
 	}
 	std::regex pattern("Temp: (\\d+) C, R: (\\d+) KB/s, T: (\\d+) KB/s");
@@ -136,8 +137,9 @@ void Overlay::RenderText(HWND hwnd) {
 		int read_speed = std::stoi(matches[2]);
 		int write_speed = std::stoi(matches[3]);
 		wchar_t buffer[100];
-		swprintf(buffer, 100, L"T: %4d �C\nR: %4d KB/s\nS: %4d KB/s", temp, read_speed, write_speed);
-		graphics.DrawString(buffer, -1, &font, {10,50}, &solidBrush);
+		swprintf(buffer, 100, L"T %4d °C\n↓ %4d KB/s\n↑ %4d KB/s", temp, read_speed, write_speed);
+		graphics.DrawString(buffer, -1, &font, {1,51}, &outlinePen);
+		graphics.DrawString(buffer, -1, &font, {0,50}, &solidBrush);
 	}
 	EndPaint(hwnd, &ps);
 }
@@ -149,4 +151,5 @@ void Overlay::UpdateOverlayPosition(HWND overlayWnd) {
 		int height = rect.bottom - rect.top;
 		SetWindowPos(overlayWnd, HWND_TOPMOST, rect.left, rect.top, width, height, SWP_NOACTIVATE | SWP_SHOWWINDOW);
 	}
+
 }
