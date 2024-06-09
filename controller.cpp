@@ -1,6 +1,5 @@
 #include "controller.h"
 
-
 Controller::Controller(int i) : controllerIndex(i), nPacketNumber(0), Buttons(0), LT(0), RT(0), LX(0), LY(0), RX(0), RY(0)
 {
 #ifdef _WIN32
@@ -15,7 +14,7 @@ Controller::~Controller()
 #ifdef _WIN32
 
 #else
-	if (sdlController != nullptr) 
+	if (sdlController != nullptr)
 		SDL_GameControllerClose(sdlController);
 
 #endif
@@ -24,7 +23,8 @@ void Controller::Poll()
 {
 #ifdef _WIN32
 	DWORD dwResult = XInputGetState(controllerIndex, &state); // Get controller state
-	if (dwResult == ERROR_SUCCESS) {
+	if (dwResult == ERROR_SUCCESS)
+	{
 		nPacketNumber++;
 		Buttons = state.Gamepad.wButtons;
 		LT = state.Gamepad.bLeftTrigger;
@@ -39,11 +39,15 @@ void Controller::Poll()
 		std::cerr << "Controller not connected." << std::endl;
 	}
 #else
-	if (sdlController != nullptr) 
+	SDL_Event event;
+	while (SDL_PollEvent(&event))
 	{
-		Buttons = SDL_GameControllerGetButton(sdlController, SDL_CONTROLLER_BUTTON_A);
-		LT = SDL_GameControllerGetAxis(sdlController, SDL_CONTROLLER_AXIS_TRIGGERLEFT);
-		RT = SDL_GameControllerGetAxis(sdlController, SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
+	}
+	if (sdlController != nullptr)
+	{
+		Buttons = SDL_GameControllerGetButton(sdlController, SDL_CONTROLLER_BUTTON_LEFTSHOULDER) * 256;
+		LT = SDL_GameControllerGetAxis(sdlController, SDL_CONTROLLER_AXIS_TRIGGERLEFT) / 128;
+		RT = SDL_GameControllerGetAxis(sdlController, SDL_CONTROLLER_AXIS_TRIGGERRIGHT) / 128;
 		LX = SDL_GameControllerGetAxis(sdlController, SDL_CONTROLLER_AXIS_LEFTX);
 		LY = SDL_GameControllerGetAxis(sdlController, SDL_CONTROLLER_AXIS_LEFTY);
 		RX = SDL_GameControllerGetAxis(sdlController, SDL_CONTROLLER_AXIS_RIGHTX);
@@ -58,7 +62,7 @@ void Controller::Poll()
 }
 std::string Controller::CreatePayload()
 {
-	std::string result = "N" + std::to_string(nPacketNumber) + "LX" + std::to_string(LX) + "LT" + std::to_string(LT) + "RT" + std::to_string(RT) + "B" + std::to_string(Buttons) +'\n';
+	std::string result = "N" + std::to_string(nPacketNumber) + "LX" + std::to_string(LX) + "LT" + std::to_string(LT) + "RT" + std::to_string(RT) + "B" + std::to_string(Buttons) + '\n';
 	return result;
 }
 
@@ -72,6 +76,6 @@ void Controller::Deadzone()
 		LX = 0;
 }
 void Controller::Print()
-{ 
+{
 	printf("%8ld LX: %8d LT: %8d RT: %8d\n", nPacketNumber, LX, LT, RT);
 }
