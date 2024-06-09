@@ -65,21 +65,24 @@ void Overlay::Init(const char* windowName)
 	ShowWindow(hwnd, SW_SHOW);
 }
 
-void Overlay::Update() {
+void Overlay::Update() 
+{
 	InvalidateRect(hwnd,0,false);
 	MSG msg = { };
-	while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
-		if (msg.message == WM_QUIT) {
+	while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) 
+	{
+		if (msg.message == WM_QUIT)
 			return;
-		}
+		
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
 
-
-	if (targetWnd == NULL) {
+	if (targetWnd == NULL) 
+	{
 		std::cerr << "Target window not found!" << std::endl;
 		targetWnd = FindWindow(NULL, TARGET_WINDOW_NAME);
+		ShowWindow(hwnd, SW_HIDE);
 	}
 
 	UpdateOverlayPosition(hwnd);
