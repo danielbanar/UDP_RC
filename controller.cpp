@@ -21,11 +21,11 @@ Controller::~Controller()
 }
 void Controller::Poll()
 {
+	nPacketNumber++;
 #ifdef _WIN32
 	DWORD dwResult = XInputGetState(controllerIndex, &state); // Get controller state
 	if (dwResult == ERROR_SUCCESS)
 	{
-		nPacketNumber++;
 		Buttons = state.Gamepad.wButtons;
 		LT = state.Gamepad.bLeftTrigger;
 		RT = state.Gamepad.bRightTrigger;

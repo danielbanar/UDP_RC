@@ -129,6 +129,7 @@ int main()
         controller.Poll();
         controller.Deadzone();
         std::string messageToSend = controller.CreatePayload();
+        memset(rxbuffer, 0, sizeof(rxbuffer));
         int bytesRead = recvfrom(serverSocket, (char*)rxbuffer, sizeof(rxbuffer), 0, (struct sockaddr*)&clientAddr, &clientAddrLen);
         if (bytesRead == SOCKET_ERROR)
         {
@@ -229,7 +230,7 @@ void RenderText(HWND hwnd) {
             graphics.DrawString(timeString, -1, &font, { rect.right - rect.left - textRect.Width - 15, 0.0f }, &solidBrush);
         }
     }
-    std::regex pattern("Temp: (\\d+) C, R: (\\d+) KB/s, T: (\\d+) KB/s");
+    std::regex pattern("Temp: (\\d+) C, R: (\\d+) KB/s, T: (\\d+) KB/s, RSSI: (-?\\d+), SNR: (-?\\d+)");
     std::smatch matches;
     std::string telemetry(rxbuffer);
     if (std::regex_search(telemetry, matches, pattern))
@@ -237,8 +238,10 @@ void RenderText(HWND hwnd) {
         int temp = std::stoi(matches[1]);
         int read_speed = std::stoi(matches[2]);
         int write_speed = std::stoi(matches[3]);
+        int rssi = std::stoi(matches[4]);
+        int snr = std::stoi(matches[5]);
         wchar_t buffer[100];
-        swprintf(buffer, 100, L"CPU %4d °C\n↓ %4d KB/s\n↑ %4d KB/s", temp, read_speed, write_speed);
+        swprintf(buffer, 100, L"CPU %4d °C\n↓ %4d KB/s\n↑ %4d KB/s\nRSSI: %4d\nSNR: %5d", temp, read_speed, write_speed, rssi,snr);
         graphics.DrawString(buffer, -1, &font, { 1,51 }, &outlinePen);
         graphics.DrawString(buffer, -1, &font, { 0,50 }, &solidBrush);
     }
