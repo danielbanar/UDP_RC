@@ -1,16 +1,29 @@
 #include "controller.h"
 
 
-Controller::Controller(int i) : controllerIndex(i), nPacketNumber(0), Buttons(0)
+Controller::Controller(int i) : controllerIndex(i), nPacketNumber(0), Buttons(0), LT(0), RT(0), LX(0), LY(0), RX(0), RY(0)
 {
-	Poll();
+#ifdef _WIN32
+	ZeroMemory(&state, sizeof(XINPUT_STATE));
+#else
+	SDL_Init(SDL_INIT_GAMECONTROLLER);
+	sdlController = SDL_GameControllerOpen(controllerIndex);
+#endif
+}
+Controller::~Controller()
+{
+#ifdef _WIN32
+
+#else
+	if (sdlController != nullptr) 
+		SDL_GameControllerClose(sdlController);
+
+#endif
 }
 void Controller::Poll()
 {
-	static XINPUT_STATE state;
-	ZeroMemory(&state, sizeof(XINPUT_STATE));
+#ifdef _WIN32
 	DWORD dwResult = XInputGetState(controllerIndex, &state); // Get controller state
-
 	if (dwResult == ERROR_SUCCESS) {
 		nPacketNumber++;
 		Buttons = state.Gamepad.wButtons;
@@ -21,9 +34,27 @@ void Controller::Poll()
 		RX = state.Gamepad.sThumbRX;
 		RY = state.Gamepad.sThumbRY;
 	}
-	else {
+	else
+	{
 		std::cerr << "Controller not connected." << std::endl;
 	}
+#else
+	if (sdlController != nullptr) 
+	{
+		Buttons = SDL_GameControllerGetButton(sdlController, SDL_CONTROLLER_BUTTON_A);
+		LT = SDL_GameControllerGetAxis(sdlController, SDL_CONTROLLER_AXIS_TRIGGERLEFT);
+		RT = SDL_GameControllerGetAxis(sdlController, SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
+		LX = SDL_GameControllerGetAxis(sdlController, SDL_CONTROLLER_AXIS_LEFTX);
+		LY = SDL_GameControllerGetAxis(sdlController, SDL_CONTROLLER_AXIS_LEFTY);
+		RX = SDL_GameControllerGetAxis(sdlController, SDL_CONTROLLER_AXIS_RIGHTX);
+		RY = SDL_GameControllerGetAxis(sdlController, SDL_CONTROLLER_AXIS_RIGHTY);
+	}
+	else
+	{
+		std::cerr << "Controller not connected." << std::endl;
+		sdlController = SDL_GameControllerOpen(controllerIndex);
+	}
+#endif
 }
 std::string Controller::CreatePayload()
 {
@@ -37,7 +68,7 @@ void Controller::Deadzone()
 		LT = 0;
 	if (RT < 10)
 		RT = 0;
-	if ( -512 < LX && LX < 512)
+	if (-512 < LX && LX < 512)
 		LX = 0;
 }
 void Controller::Print()

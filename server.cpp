@@ -22,7 +22,7 @@ using namespace Gdiplus;
         MultiByteToWideChar(CP_UTF8, 0, input, -1, output, length); \
         return output; \
     })(str)
-
+//leak xd
 
 
 const char* TARGET_WINDOW_NAME = "Direct3D11 renderer";
