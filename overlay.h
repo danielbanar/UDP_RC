@@ -13,21 +13,7 @@
 
 using namespace Gdiplus;
 
-class Overlay {
-public:
-    static Overlay* getInstance();
-    void Init(const char* windowName);
-    void Update();
-    std::string telemetry;
-private:
-    static Overlay* instance;
-    ULONG_PTR gdiplusToken;
-    HWND targetWnd;
-    HWND hwnd;
-    const char* TARGET_WINDOW_NAME;
-    Overlay();
-    static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-    static void RenderText(HWND hwnd);
-    void UpdateOverlayPosition(HWND overlayWnd);
-};
-
+LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+void RenderText(HWND hwnd);
+void Update(HWND hwnd, HWND targetWnd);
+void UpdateOverlayPosition(HWND hwnd, HWND targetWnd);
