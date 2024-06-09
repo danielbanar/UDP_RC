@@ -120,7 +120,7 @@ int main() {
 		unsigned long rx_kbps = static_cast<unsigned long>(rx_diff / bytes_to_kb / interval);
 		unsigned long tx_kbps = static_cast<unsigned long>(tx_diff / bytes_to_kb / interval);
 
-		std::string temp_str = "Temp " + std::to_string(get_cpu_temperature()) + "C, R: " + std::to_string(rx_kbps) + " KB/s, T: " + std::to_string(tx_kbps) + " KB/s\n";
+		std::string temp_str = "Temp: " + std::to_string(get_cpu_temperature()) + " C, R: " + std::to_string(rx_kbps) + " KB/s, T: " + std::to_string(tx_kbps) + " KB/s\n";
 
 		sendto(sockfd, temp_str.c_str(), temp_str.length(), MSG_CONFIRM, (const struct sockaddr*)&serverAddr, sizeof(serverAddr));
 	}

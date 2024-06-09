@@ -5,8 +5,8 @@
 #include <chrono>
 #include <string>
 #include "controller.h"
+#include "overlay.h"
 #pragma comment(lib, "Ws2_32.lib")
-
 int main()
 {
     WSADATA wsaData;
@@ -63,9 +63,9 @@ int main()
     }
 
     uint8_t rxbuffer[128] = {0};
-
     Controller controller(0);
-
+    Overlay* overlay = Overlay::getInstance();
+    overlay->Init("Direct3D11 renderer");
     while (true)
     {
         controller.Poll();
@@ -93,7 +93,8 @@ int main()
             FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&errorMessage, 0, NULL);
             std::cerr << "Error sending data to client: " << errorMessage;
         }
-
+        overlay->Update();
+        overlay->telemetry=std::string((char*)rxbuffer);
         std::this_thread::sleep_for(std::chrono::milliseconds(20));
     }
 
