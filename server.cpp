@@ -171,7 +171,21 @@ int main()
     WSACleanup();
     return 0;
 }
+void ResizeRenderTarget(HWND hwnd)
+{
+    if (pRenderTarget)
+    {
+        RECT rc;
+        GetClientRect(hwnd, &rc);
 
+        D2D1_SIZE_U size = D2D1::SizeU(
+            rc.right - rc.left,
+            rc.bottom - rc.top
+        );
+
+        pRenderTarget->Resize(size);
+    }
+}
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
     case WM_PAINT:
@@ -180,6 +194,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     case WM_DESTROY:
         PostQuitMessage(0);
         return 0;
+    case WM_SIZE:
+        ResizeRenderTarget(hwnd);
+        break;
     }
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
