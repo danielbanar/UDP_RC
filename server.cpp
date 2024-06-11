@@ -4,17 +4,19 @@
 #include <thread>
 #include <chrono>
 #include <windows.h>
-#include <gdiplus.h>
+#include <d2d1.h>
+#include <dwrite.h>
 #include <ctime>
 #include <locale>
 #include <string>
 #include <regex>
 #include "controller.h"
 #include "overlay.h"
-#pragma comment (lib,"Gdiplus.lib")
-#pragma comment(lib, "Ws2_32.lib")
 
-using namespace Gdiplus;
+#pragma comment(lib, "Ws2_32.lib")
+#pragma comment(lib, "D2d1.lib")
+#pragma comment(lib, "Dwrite.lib")
+
 #define CHAR_TO_WCHAR(str) \
     ([](const char* input) { \
         int length = MultiByteToWideChar(CP_UTF8, 0, input, -1, NULL, 0); \
@@ -22,11 +24,21 @@ using namespace Gdiplus;
         MultiByteToWideChar(CP_UTF8, 0, input, -1, output, length); \
         return output; \
     })(str)
-//leak xd
-
 
 const char* TARGET_WINDOW_NAME = "Direct3D11 renderer";
 char rxbuffer[128] = { 0 };
+ID2D1Factory* pFactory = NULL;
+ID2D1HwndRenderTarget* pRenderTarget = NULL;
+IDWriteFactory* pDWriteFactory = NULL;
+IDWriteTextFormat* pTextFormat = NULL;
+ID2D1SolidColorBrush* pBrush = NULL;
+ID2D1SolidColorBrush* pOutlineBrush = NULL;
+
+void InitD2D(HWND hwnd);
+void CleanupD2D();
+void RenderText(HWND hwnd);
+void Update(HWND hwnd, HWND targetWnd);
+
 int main()
 {
     WSADATA wsaData;
@@ -84,10 +96,6 @@ int main()
 
     Controller controller(0);
 
-    ULONG_PTR gdiplusToken;
-    GdiplusStartupInput gdiplusStartupInput;
-    GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
-
     const char* CLASS_NAME = "OverlayWindowClass";
     HINSTANCE hInstance = GetModuleHandle(NULL);
 
@@ -95,7 +103,7 @@ int main()
     wc.lpfnWndProc = WindowProc;
     wc.hInstance = hInstance;
     wc.lpszClassName = CLASS_NAME;
-    wc.hbrBackground = CreateSolidBrush(RGB(10, 10, 10)); // Transparent background but not black
+    wc.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH); // Transparent background
 
     RegisterClass(&wc);
     HWND hwnd = CreateWindowEx(
@@ -115,9 +123,11 @@ int main()
         return 1;
     }
 
-    SetLayeredWindowAttributes(hwnd, RGB(10, 10, 10), 0, LWA_COLORKEY); // Make the window transparent
+    SetLayeredWindowAttributes(hwnd, RGB(0, 0, 0), 0, LWA_COLORKEY); // Make the window transparent
 
     ShowWindow(hwnd, SW_SHOW);
+
+    InitD2D(hwnd);
 
     HWND targetWnd = FindWindow(NULL, TARGET_WINDOW_NAME);
     if (!targetWnd) {
@@ -155,8 +165,8 @@ int main()
         Update(hwnd, targetWnd);
         std::this_thread::sleep_for(std::chrono::milliseconds(20));
     }
-    // Shutdown GDI+
-    GdiplusShutdown(gdiplusToken);
+
+    CleanupD2D();
     closesocket(serverSocket);
     WSACleanup();
     return 0;
@@ -176,7 +186,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 
 void Update(HWND hwnd, HWND targetWnd)
 {
-    InvalidateRect(hwnd, 0, false);
+    InvalidateRect(hwnd, 0, true);
     MSG msg = { };
     while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
     {
@@ -197,24 +207,49 @@ void Update(HWND hwnd, HWND targetWnd)
     UpdateOverlayPosition(hwnd, targetWnd);
 }
 
-
-
 void RenderText(HWND hwnd) {
     PAINTSTRUCT ps;
     HDC hdc = BeginPaint(hwnd, &ps);
 
-    // Create GDI+ graphics object
-    Graphics graphics(hdc);
+    if (!pRenderTarget)
+    {
+        HRESULT hr = pFactory->CreateHwndRenderTarget(
+            D2D1::RenderTargetProperties(
+                D2D1_RENDER_TARGET_TYPE_DEFAULT,
+                D2D1::PixelFormat(
+                    DXGI_FORMAT_B8G8R8A8_UNORM,
+                    D2D1_ALPHA_MODE_PREMULTIPLIED)
+            ),
+            D2D1::HwndRenderTargetProperties(
+                hwnd,
+                D2D1::SizeU(
+                    ps.rcPaint.right - ps.rcPaint.left,
+                    ps.rcPaint.bottom - ps.rcPaint.top)
+            ),
+            &pRenderTarget);
 
-    // Clear the entire window with transparency
-    graphics.Clear(Color(10, 10, 10)); //Not needed cuse in InvalidateRect()
+        if (SUCCEEDED(hr))
+        {
+            pRenderTarget->CreateSolidColorBrush(
+                D2D1::ColorF(D2D1::ColorF::White),
+                &pBrush);
 
-    // Set text color and font
-    FontFamily fontFamily(L"Consolas");
-    Font font(&fontFamily, 20, FontStyleRegular, UnitPixel);
-    SolidBrush solidBrush(Color(255, 255, 255, 255)); // White text
-    SolidBrush outlinePen(Color(255, 0, 0, 0));
-    // Text to render
+            pRenderTarget->CreateSolidColorBrush(
+                D2D1::ColorF(D2D1::ColorF::Black),
+                &pOutlineBrush);
+        }
+    }
+
+    pRenderTarget->BeginDraw();
+    pRenderTarget->Clear(D2D1::ColorF(0.0f, 0.0f, 0.0f, 0.0f)); // Fully transparent background
+
+    D2D1_RECT_F layoutRect = D2D1::RectF(
+        static_cast<FLOAT>(ps.rcPaint.left),
+        static_cast<FLOAT>(ps.rcPaint.top),
+        static_cast<FLOAT>(ps.rcPaint.right),
+        static_cast<FLOAT>(ps.rcPaint.bottom)
+    );
+
     time_t currentTime = time(0);
     struct tm localTime;
     if (localtime_s(&localTime, &currentTime) == 0)
@@ -222,14 +257,16 @@ void RenderText(HWND hwnd) {
         wchar_t timeString[128];
         if (std::wcsftime(timeString, 128, L"%c", &localTime))
         {
-            RectF textRect;
-            graphics.MeasureString(timeString, -1, &font, PointF(0, 0), &textRect);
-            RECT rect;
-            GetWindowRect(hwnd, &rect);
-            graphics.DrawString(timeString, -1, &font, { rect.right - rect.left - textRect.Width - 15 + 1, 0.0f + 1 }, &outlinePen);
-            graphics.DrawString(timeString, -1, &font, { rect.right - rect.left - textRect.Width - 15, 0.0f }, &solidBrush);
+            pRenderTarget->DrawText(
+                timeString,
+                wcslen(timeString),
+                pTextFormat,
+                layoutRect,
+                pBrush
+            );
         }
     }
+    static wchar_t telemetryBuffer[128];
     std::regex pattern("Temp: (\\d+) C, R: (\\d+) KB/s, T: (\\d+) KB/s, RSSI: (-?\\d+), SNR: (-?\\d+)");
     std::smatch matches;
     std::string telemetry(rxbuffer);
@@ -240,12 +277,44 @@ void RenderText(HWND hwnd) {
         int write_speed = std::stoi(matches[3]);
         int rssi = std::stoi(matches[4]);
         int snr = std::stoi(matches[5]);
-        wchar_t buffer[100];
-        swprintf(buffer, 100, L"CPU %4d °C\n↓ %4d KB/s\n↑ %4d KB/s\nRSSI: %4d\nSNR: %5d", temp, read_speed, write_speed, rssi,snr);
-        graphics.DrawString(buffer, -1, &font, { 1,51 }, &outlinePen);
-        graphics.DrawString(buffer, -1, &font, { 0,50 }, &solidBrush);
+
+        swprintf(telemetryBuffer, 128, L"CPU %4d °C\n↓ %4d KB/s\n↑ %4d KB/s\nRSSI: %4d\nSNR: %5d", temp, read_speed, write_speed, rssi, snr);
     }
+    layoutRect.top += 30.0f; // Move the position down for the next text
+    pRenderTarget->DrawText(
+        telemetryBuffer,
+        wcslen(telemetryBuffer),
+        pTextFormat,
+        layoutRect,
+        pBrush
+    );
+    pRenderTarget->EndDraw();
+
     EndPaint(hwnd, &ps);
+}
+
+void InitD2D(HWND hwnd)
+{
+    D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &pFactory);
+    DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), reinterpret_cast<IUnknown**>(&pDWriteFactory));
+    pDWriteFactory->CreateTextFormat(
+        L"Consolas",
+        NULL,
+        DWRITE_FONT_WEIGHT_REGULAR,
+        DWRITE_FONT_STYLE_NORMAL,
+        DWRITE_FONT_STRETCH_NORMAL,
+        20.0f,
+        L"",
+        &pTextFormat);
+}
+
+void CleanupD2D()
+{
+    if (pBrush) pBrush->Release();
+    if (pTextFormat) pTextFormat->Release();
+    if (pDWriteFactory) pDWriteFactory->Release();
+    if (pRenderTarget) pRenderTarget->Release();
+    if (pFactory) pFactory->Release();
 }
 
 void UpdateOverlayPosition(HWND hwnd, HWND targetWnd) {
