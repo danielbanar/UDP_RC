@@ -95,7 +95,7 @@ void ProcessPayload(std::vector<uint8_t> payload)
         tel.capacity = (payload[5] << 16) | (payload[6] << 8) | payload[7];
         tel.remaining = payload[8];
 #ifdef _DEBUG
-        //printf("BATTERY_SENSOR: %.1fV\t%.1fA\t%dmAh\t%d%%\n", ((float)tel.voltage) / 10, ((float)tel.current) / 10, tel.capacity, tel.remaining);
+        printf("BATTERY_SENSOR: %.1fV\t%.1fA\t%dmAh\t%d%%\n", ((float)tel.voltage) / 10, ((float)tel.current) / 10, tel.capacity, tel.remaining);
 #endif // DEBUG
 
     }
@@ -108,7 +108,7 @@ void ProcessPayload(std::vector<uint8_t> payload)
         tel.altitude = ((payload[13] << 8) | payload[14]) - 1000;                                 // meters, +1000m big endian
         tel.satellites = payload[15];                                                             // satellites
 #ifdef _DEBUG
-        //printf("GPS: %lf, %lf\tGspd: %dm/s\tHdg: %d°\tAlt: %dm\tSat: %d\n", ((double)tel.latitude) / 10000000.0, ((double)tel.longitude) / 10000000.0, tel.groundspeed / 10, tel.heading / 100, tel.altitude, tel.satellites);
+        printf("GPS: %lf, %lf\tGspd: %dm/s\tHdg: %d°\tAlt: %dm\tSat: %d\n", ((double)tel.latitude) / 10000000.0, ((double)tel.longitude) / 10000000.0, tel.groundspeed / 10, tel.heading / 100, tel.altitude, tel.satellites);
 #endif // DEBUG
     }
     else if (payload[0] == 0x07) // CRSF_FRAMETYPE_VARIO
@@ -125,7 +125,7 @@ void ProcessPayload(std::vector<uint8_t> payload)
         memcpy(flightMode, &payload[1], payload.size() - 1);
         tel.flightMode = flightMode;
 #ifdef _DEBUG
-        //printf("FM: %s\n", flightMode);
+        printf("FM: %s\n", flightMode);
 #endif // DEBUG
 
     }
