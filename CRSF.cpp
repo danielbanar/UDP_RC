@@ -12,7 +12,7 @@
 #include <mutex>
 #include <regex>
 #include "controller.h"
-#include "overlay.h"
+#include "server.h"
 #include <iostream>
 #include <string>
 #include <fcntl.h>
@@ -60,4 +60,44 @@ double calculateHaversine(double lat1, double lon1, double lat2, double lon2)
     double distance = EarthRadiusKm * c;
 
     return distance * 1000.0;
+}
+uint8_t CRC(const std::vector<uint8_t>& data, std::size_t start, std::size_t length)
+{
+	uint8_t crc = 0;
+	std::size_t end = start + length;
+
+	if (end > data.size())
+		end = data.size();
+
+	for (std::size_t i = start; i < end; ++i)
+	{
+		crc ^= data[i];
+
+		for (uint8_t j = 0; j < 8; ++j)
+		{
+			if (crc & 0x80)
+				crc = (crc << 1) ^ 0xD5;
+			else
+				crc <<= 1;
+		}
+	}
+
+	return crc;
+}
+void printHex(const char* arr, size_t length) 
+{
+	for (size_t i = 0; i < length; i++) {
+		printf("%02X ", (unsigned char)arr[i]);
+	}
+	printf("\n");
+}
+void printVectorHex(const std::vector<uint8_t>& vec, std::size_t maxLength) 
+{
+	std::size_t count = 0;
+	for (const auto& val : vec) {
+		if (count >= maxLength) break;
+		printf("%02X ", val);
+		count++;
+	}
+	printf("\n");
 }
