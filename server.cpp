@@ -309,8 +309,23 @@ void CleanupD2D();
 void RenderText(HWND hwnd);
 void Update(HWND hwnd, HWND targetWnd);
 
-int main()
+int main(int argc, char* argv[])
 {
+	for (int i = 1; i < argc; ++i)
+	{
+		if (strcmp(argv[i], "-home") == 0 && i + 2 < argc)
+		{
+			homeLat = atof(argv[i + 1]);
+			homeLon = atof(argv[i + 2]);
+			i += 2;
+		}
+		// Check if the current argument is "-s" and there's another argument available
+		else if (strcmp(argv[i], "-s") == 0 && i + 1 < argc)
+		{
+			serCells = atoi(argv[i + 1]);
+			++i;
+		}
+	}
 	WSADATA wsaData;
 	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
 	{
