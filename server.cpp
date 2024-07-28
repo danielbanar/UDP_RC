@@ -477,7 +477,7 @@ int main(int argc, char* argv[])
 #endif
 
 		{
-			std::string messageToSend = "TODO CRSF PACKETS";
+			std::string messageToSend = "CRSF\n";
 			memset(rxbuffer1, 0, sizeof(rxbuffer1));
 			int bytesRead = recvfrom(serverSocket1, (char*)rxbuffer1, sizeof(rxbuffer1), 0, (struct sockaddr*)&clientAddr, &clientAddrLen);
 			if (bytesRead == SOCKET_ERROR)
@@ -496,19 +496,19 @@ int main(int argc, char* argv[])
 				buffer.insert(buffer.end(), &rxbuffer1[0], &rxbuffer1[bytesRead]);
 				CheckPayloads(buffer);
 			}
-			if (sendto(serverSocket1, messageToSend.c_str(), messageToSend.length(), 0, (struct sockaddr*)&clientAddr, clientAddrLen) == SOCKET_ERROR)
+			/*if (sendto(serverSocket1, messageToSend.c_str(), messageToSend.length(), 0, (struct sockaddr*)&clientAddr, clientAddrLen) == SOCKET_ERROR)
 			{
 				int err = WSAGetLastError();
 				LPSTR errorMessage = nullptr;
 				FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&errorMessage, 0, NULL);
 				std::cerr << "Error sending data to client: " << errorMessage;
-			}
+			}*/
 		}
 		{
 #ifndef NO_CONTROLLER
 			std::string messageToSend = controller.CreatePayload();
 #endif
-			std::string messageToSend = "TODO CRSF PACKETS";
+			std::string messageToSend = "PI\n";
 			memset(rxbuffer2, 0, sizeof(rxbuffer2));
 			int bytesRead = recvfrom(serverSocket2, (char*)rxbuffer2, sizeof(rxbuffer2), 0, (struct sockaddr*)&clientAddr, &clientAddrLen);
 			if (bytesRead == SOCKET_ERROR)
@@ -525,13 +525,13 @@ int main(int argc, char* argv[])
 			{
 				std::cout << "Client: " << rxbuffer2;
 			}
-			if (sendto(serverSocket2, messageToSend.c_str(), messageToSend.length(), 0, (struct sockaddr*)&clientAddr, clientAddrLen) == SOCKET_ERROR)
+			/*if (sendto(serverSocket2, messageToSend.c_str(), messageToSend.length(), 0, (struct sockaddr*)&clientAddr, clientAddrLen) == SOCKET_ERROR)
 			{
 				int err = WSAGetLastError();
 				LPSTR errorMessage = nullptr;
 				FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&errorMessage, 0, NULL);
 				std::cerr << "Error sending data to client: " << errorMessage;
-			}
+			}*/
 		}
 
 		Update(hwnd, targetWnd);
